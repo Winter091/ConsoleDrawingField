@@ -9,6 +9,8 @@ void Plain::_drawLine(unsigned char c, int sx, int ex, int ny)
 
 Plain::Plain(unsigned int width, unsigned int height, unsigned char axisFiller)
 {
+	this->hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	
 	this->w = width;
 	this->h = height;
 
@@ -21,9 +23,41 @@ Plain::Plain(unsigned int width, unsigned int height, unsigned char axisFiller)
 
 void Plain::show()
 {
+	std::system("cls");
 	for (int i = 0; i < this->h; i++)
 	{
 		std::cout << this->field[i] << std::endl;
+	}
+}
+
+void Plain::showBuffered()
+{
+	std::cout.flush();
+	SetConsoleCursorPosition(this->hConsole, { (short)0, (short)0 });
+	for (int i = 0; i < this->h; i++)
+	{
+		std::cout << this->field[i] << '\n';
+	}
+}
+
+void Plain::showBufferedColored()
+{
+	std::cout.flush();
+	SetConsoleCursorPosition(this->hConsole, { (short)0, (short)0 });
+
+	for (register int i = 0; i < this->h; i++)
+	{
+		//std::cout << this->field[i] << '\n';
+		for (register int j = 0; j < this->w; j++)
+		{
+			if (this->field[i][j] != ' ')
+			{
+				this->setColor(this->field[i][j]);
+				std::cout << (unsigned char)219;
+			}
+			else std::cout << ' ';
+		}
+		std::cout << '\n';
 	}
 }
 
@@ -40,6 +74,11 @@ void Plain::clear()
 		}
 		this->field.push_back(tempStr);
 	}
+}
+
+void Plain::setColor(unsigned int color)
+{
+	SetConsoleTextAttribute(this->hConsole, color);
 }
 
 bool Plain::noBoundariesError(int x, int y)
@@ -70,16 +109,16 @@ void Plain::putLine(unsigned char ch, int x1, int y1, int x2, int y2)
 
 	if (totalLength == 0) return;
 
-	float xStep = abs(dx / totalLength);
-	float yStep = abs(dy / totalLength);
+	float xStep = dx / totalLength;
+	float yStep = dy / totalLength;
 
 	float currentX = x1, currentY = y1;
 
-	while (noBoundariesError(currentX, currentY) && ((int)currentX != x2 && (int)currentY != y2))
+	while (noBoundariesError(currentX, currentY) && (abs(currentX - x2) > 1 || abs(currentY - y2) > 1))
 	{
 		this->putPoint(ch, (int)currentX, (int)currentY);
-		currentX += (dx > 0 ? xStep : -xStep);
-		currentY += (dy > 0 ? yStep : -yStep);
+		currentX += xStep;
+		currentY += yStep;
 	}
 }
 
@@ -214,5 +253,23 @@ next:
 		t2x += t2xp;
 		y += 1;
 		if (y > y3) return;
+	}
+}
+
+void Plain::putCircle(unsigned char c, int x, int y, int r)
+{
+	float a = 0.0f;
+	while (a <= 2 * 3.1415926) {
+		putPoint(c, x + cos(a) * r, y + sin(a) * r);
+		a += 0.001f;
+	}
+}
+
+void Plain::putCircleFilled(unsigned char c, int x, int y, int r)
+{	
+	float a = 0.0f;
+	while (a <= 2 * 3.1415926) {
+		putLine(c, x, y, x + cos(a) * r, y + sin(a) * r);
+		a += 0.05f;
 	}
 }
